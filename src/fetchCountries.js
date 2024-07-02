@@ -7,7 +7,7 @@ const fetchCountries = async name => {
         const response = await fetch(
             COUNTRIES_API_URL +
             name +
-            'fields=name,capital,population,flags,languages'
+            '?fields=name,capital,population,flags,languages'
         );
 
         if (response.status == 200) {
