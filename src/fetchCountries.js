@@ -14,7 +14,7 @@ const fetchCountries = async name => {
             let json = await response.json();
             return json;
         }
-        
+
     } catch (error) {
         throw new Error (response.status);
     }
