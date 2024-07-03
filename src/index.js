@@ -1,97 +1,76 @@
-
+import Notiflix from 'notiflix';
+const debounce = require('lodash.debounce');
 import { fetchCountries } from './fetchCountries';
-import debounce from 'lodash.debounce';
-import {Notify} from 'notiflix/build/notiflix-notify-aio';
 
-const inputCountry = document.querySelector ('input#search-box');
-const listCountry = document.querySelector ('.country-list');
-const infoCountry = document.querySelector ('.country-info');
-
+const input = document.querySelector('#search-box');
+const countriesList = document.querySelector('.country-list');
+const countryInfo = document.querySelector('.country-info');
 const DEBOUNCE_DELAY = 300;
 
-function inputHandler(event) {
-    const searchInput = event.target.value.trim();
+input.addEventListener('input', debounce(onInput, DEBOUNCE_DELAY));
 
-    cleanCountry()
-    cleanListCountry()
+function onInput(event) {
+  const inputValue = event.target.value;
 
-    fetchCountries(searchInput)
-    .then (data => {
-        if (data.length > 10) {
-            Notify.info('Too many matches found. Please enter a more specific name'
-            );
-            return;
+  countryInfo.innerHTML = '';
+  countriesList.innerHTML = '';
 
-        }
-        countryDataMarkup(data);        
+  if (inputValue === '') {
+    return;
+  }
+
+  fetchCountries(inputValue.trim())
+    .then(renderCountry)
+    .catch(error =>
+      Notiflix.Notify.failure('Oops, there is no country with that name')
+    );
+}
+
+function renderCountry(countries) {
+  if (countries.length > 10) {
+    Notiflix.Notify.warning(
+      'Too many matches found. Please enter a more specific name.'
+    );
+    return;
+  }
+  if (countries.length === 1) {
+    renderInfoAboutCountry(countries);
+  } else {
+    renderListOfCountries(countries);
+  }
+}
+function renderListOfCountries(countries) {
+  const markup = countries
+    .map(country => {
+      return `<li class="country-list__flag" > <img src="${country.flags.svg}" alt="${country.name.official}" width="50"> <p class="country-list__name">${country.name.official}</p> </li> `;
     })
-    .catch(err => {
-        Notify.failure('Oops, there is no country with that name');
-    });
-};
-
-function createListMarkup(data) {
-    
-    return data
-    .map ( ( { name, flags}) =>
-    `<li class="country-list_item" data-country = '${name.common}'><img class="country-info_item"</li>`
-)
-
     .join('');
-};
+  return (countriesList.innerHTML = markup);
+}
 
-    
-
-
-function createDataMarkup(data) {
-    const countryE1 = data [0];
-    const { name, capital, population,flags, languages } = countryE1;
-        return `
-            <li class="country_item">
-                <div class="country_flag-name-container">
-                <img src="${flags.svg}" alt="${name.common}" height="30px"/></p>
-                <h1 class="country_title" >${name.official}</h2>
-                </div>
-                <p><b>Capital:</b> ${capital}
-                <p><b>Population:</b> ${population}</p>
-                <p><b>Languages:</b> ${Object.values(data[0].languages)}</p>
-            </li>
-        `;
-};
-
-
-function countryDataMarkup(data) {        
-    if (data.length === 1) {
-        const dataMarkup = createDataMarkup(data);
-        infoCountry.innerHTML = dataMarkup;
-    } else {
-        const listMarkup = createListMarkup (data);
-        listCountry.innerHTML = listMarkup;
-    
-        const listCountryItem = document.querySelectorAll ('li');
-    
-        listCountryItem.forEach(item => {
-            item.addEventListener('click',  event => {
-                const clickedCountry = event.currentTarget.dataset.country;
-                const wantedCountry = data.filter (
-                    country => country.name.common === clickedCountry
-                );    
-            
-                infoCountry.innerHTML = createDataMarkup(wantedCountry);
-                console.log('item clicked!', clickedCountry);
-                cleanListCountry();
-            });        
-        });    
-    };    
-};
-
-
-inputCountry.addEventListener('input', debounce(inputHandler, DEBOUNCE_DELAY));
-
-function cleanCountry() {  
-    infoCountry.innerHTML = '';
-};
-
-function cleanListCountry() {
-    listCountry.innerHTML = '';
-};
+function renderInfoAboutCountry(countries) {
+  const markup = countries
+    .map(country => {
+      return `<div class="country-info-title"><img src="${
+        country.flags.svg
+      }" alt="${
+        country.name.official
+      }" width="25"> <p class="country-info-title__name">${
+        country.name.official
+      }</p> </div>
+      <ul class="country-info-list">
+      </li> 
+        <li class="country-info-list__item"><b>Capital: </b>${
+          country.capital
+        }</li>
+         <li class="country-info-list__item"><b>Population: </b>${
+           country.population
+         }</li>
+          <li class="country-info-list__item"><b>Languages: </b>${Object.values(
+            country.languages
+          )}</li>
+        </ul> `;
+    })
+    .join('');
+  return (countryInfo.innerHTML = markup);
+}
